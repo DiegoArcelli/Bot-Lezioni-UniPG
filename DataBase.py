@@ -28,9 +28,10 @@ class DataBase:
         return connection
 
 
-    def list_teachings(self):
+    def list_teachings(self, cdl):
         try:
-            query = "SELECT * FROM Insegnamento INNER JOIN Docente ON Insegnamento.id_docente = Docente.id_docente "
+            query = "SELECT * FROM Insegnamento INNER JOIN Docente ON Insegnamento.id_docente = Docente.id_docente WHERE Insegnamento.corso_di_laurea = '" + cdl + "'"
+            print(query) 
             cursor = self.connection.cursor()
             cursor.execute(query)
             records = cursor.fetchall()
@@ -38,7 +39,6 @@ class DataBase:
             for row in records:
                 temp = "Insegnamento: " + str(row[0], 'utf-8') + "\nId insegnamento: " + str(row[1]) + "\nDocente: " + str(row[5], 'utf-8') + " " + str(row[6], 'utf-8') + "\n\n"
                 full_string += temp
-            print(full_string)
         except Error as e:
             print("Error reading data from MySQL table", e)
         finally:
@@ -118,3 +118,24 @@ class DataBase:
             if(self.connection.is_connected()):
                 cursor.close()
         return full_string
+        
+
+    def search_by_keyword(self, keyword, cdl):
+        try:
+            if cdl == "all":
+                query = "SELECT Insegnamento.id_insegnamento FROM Insegnamento INNER JOIN Docente ON Insegnamento.id_docente = Docente.id_docente WHERE LOWER(nome_insegnamento) LIKE '%" + keyword.lower() + "%'"
+            else:
+                query = "SELECT Insegnamento.id_insegnamento FROM Insegnamento INNER JOIN Docente ON Insegnamento.id_docente = Docente.id_docente WHERE LOWER(nome_insegnamento) LIKE '%" + keyword.lower() + "%' AND corso_di_laurea = '" + cdl + "'"
+            cursor = self.connection.cursor()
+            cursor.execute(query)
+            records = cursor.fetchall()
+            full_string = ""
+            for itm in records:
+                full_string += self.show_teaching_info(itm[0]) + "\n\n"
+        except Error as e:
+            print("Error reading data from MySQL table", e)
+        finally:
+            if(self.connection.is_connected()):
+                cursor.close()
+        return full_string
+        
