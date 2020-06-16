@@ -1,0 +1,5 @@
+Lista dei comadi:
+- /help: ritorna la lista dei comandi
+- /info [id]: se inserito senza parametri permette di cercare un'insegnamento tramite un menu grafico. Se inserito con un parametro ritorna le informazioni relative all'insegnamento con id corrispondente al parametro
+- /lesson [id]: se inserito senza parametri permette di cercare le lezioni di un insegnamento tramite un menu grafico. Se inserito con un parametro ritorna le lezioni relative all'insegnamento con id corrispondente al parametro
+- /search string: ritorna gli insegnamenti che contengono le loro nome la stringa passata come parametro al comando, filtrando gli insegnamenti per il corso di laurea che verrà succcessivamente selezionato con un menu grafico

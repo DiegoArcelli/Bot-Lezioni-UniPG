@@ -10,6 +10,14 @@ class DataBase:
         self.connection = self.db_connect(user, host, db, password)
 
 
+    @staticmethod
+    def get_instance(user, host, db, password):
+        global instance
+        if not 'instance' in globals():
+            instance = DataBase(user, host, db, password)
+        return instance
+
+
     def db_connect(self, user, host, db, password):
         try:
             connection = mysql.connector.connect(host='localhost', database='lezioni_db', user='root', password='')
@@ -31,7 +39,6 @@ class DataBase:
     def list_teachings(self, cdl):
         try:
             query = "SELECT * FROM Insegnamento INNER JOIN Docente ON Insegnamento.id_docente = Docente.id_docente WHERE Insegnamento.corso_di_laurea = '" + cdl + "'"
-            print(query) 
             cursor = self.connection.cursor()
             cursor.execute(query)
             records = cursor.fetchall()
@@ -82,7 +89,6 @@ class DataBase:
     def get_cdl_teachings(self, teaching):
         try:
             query = "SELECT nome_insegnamento, id_insegnamento FROM Insegnamento WHERE corso_di_laurea = '" + teaching + "'"
-            print(query)
             cursor = self.connection.cursor()
             cursor.execute(query)
             records = cursor.fetchall()
@@ -106,7 +112,6 @@ class DataBase:
             cursor.execute(query)
             records = cursor.fetchall()
             full_string = "Insegnamento " + str(records[0][6], 'utf-8') + "\n\n"
-            print(full_string)
             for itm in records:
                 data = itm[3]
                 str_data = data.strftime('%m/%d/%Y')
@@ -138,4 +143,3 @@ class DataBase:
             if(self.connection.is_connected()):
                 cursor.close()
         return full_string
-        
