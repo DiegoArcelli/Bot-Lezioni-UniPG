@@ -10,81 +10,109 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-selected_teaching = ""
+selected_cdl = ""
 inserted_keyword = ""
 professor_name = ""
 
 
-def help(update, context):
+def start_command(update, context):
+    update.message.reply_text("Usa il comando /help per visualizzare la lista dei comandi.")
+
+
+def help_command(update, context):
     update.message.reply_text(open('help').read())
 
 
 def error(update, context):
-    """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
-def show_teachings_list(update, context):
+def list_command(update, context):
     update.message.reply_text(cdl_menu_message(), reply_markup=cdl_list_menu_keyboard())
 
 
-def show_teaching_info(update, context):
+def info_command(update, context):
     if len(context.args) == 1:
-        db = DataBase.get_instance()
-        text = db.show_teaching_info(context.args[0])
-        update.message.reply_text(text)
+        if check_if_int(context.args[0]):
+            db = DataBase.get_instance()
+            text = db.show_teaching_info(context.args[0])
+            update.message.reply_text(text, disable_web_page_preview=True)
+        else:
+            update.message.reply_text("Errore: il parametro deve essere un numero intero.")
     elif len(context.args) == 0:
         update.message.reply_text(cdl_menu_message(), reply_markup=cdl_menu_keyboard())
     else:
-        update.message.reply_text("Errore: inserire uno o zero parametri.")
+        update.message.reply_text("Errore: inserire uno o nessun parametro.")
 
 
-def show_lessons(update, context):
+def lesson_command(update, context):
     if len(context.args) == 1:
-        db = DataBase.get_instance()
-        text = db.get_lessons(context.args[0])
-        update.message.reply_text(text)
+        if check_if_int(context.args[0]):
+            db = DataBase.get_instance()
+            text = db.get_lessons(context.args[0])
+            update.message.reply_text(text)
+        else:
+            update.message.reply_text("Errore: il parametro deve essere un numero intero.")
     elif len(context.args) == 0:
         update.message.reply_text(cdl_menu_message(), reply_markup=lesson_menu_keyboard())
     else:
-        update.message.reply_text("Errore: inserire uno o zero parametri.")
+        update.message.reply_text("Errore: inserire uno o nessun parametro.")
 
 
-def search_teaching(update, context):
+def search_command(update, context):
     global inserted_keyword
     if len(context.args) > 0:
         keyword = ""
         for itm in context.args:
             keyword += str(itm) + " "
         keyword = keyword[:-1]
-        inserted_keyword = keyword
-        update.message.reply_text(cdl_menu_message(), reply_markup=cdl_search_menu_keyboard())
+        if len(keyword) <= 500:
+            inserted_keyword = keyword
+            update.message.reply_text(cdl_menu_message(), reply_markup=cdl_search_menu_keyboard())
+        else:
+            update.message.reply_text("Errore: il parametro non deve contenere più di 500 caratteri.")
     else:
         update.message.reply_text("Errore: nessun parametro inserito.")
 
 
-def search_professor(update, context):
+def prof_command(update, context):
     global professor_name
     if len(context.args) > 0:
         name = ""
         for itm in context.args:
             name += str(itm) + " "
         name = name[:-1]
-        professor_name = name
-        update.message.reply_text(cdl_menu_message(), reply_markup=cdl_search_professor_keyboard())
+        if len(name) <= 500:
+            professor_name = name
+            update.message.reply_text(cdl_menu_message(), reply_markup=cdl_search_professor_keyboard())
+        else:
+            update.message.reply_text("Errore: il parametro non deve contenere più di 500 caratteri.")
     else:
         update.message.reply_text("Errore: nessun parametro inserito.")
 
 
-#############################GUI_STUFF#############################
+def check_if_int(val):
+    try:
+        int(val)
+        return True
+    except ValueError:
+        return False
+
+
+def unknow_command(update, context):
+    known = ['/help', '/list', '/info', '/lesson', '/search', '/prof', '/start']
+    command = update.message.text.split(' ')[0]
+    if command not in known:
+        update.message.reply_text("Comando non riconosciuto. Provare comando /help per vedere la lista dei comandi.")
+
 
 def cdl_menu(update, context):
-    global selected_teaching
+    global selected_cdl
     global professor_name
     if "cdl_info" in update.callback_query.data:
         string = update.callback_query.data
         splitted = string.split("-")
-        selected_teaching = splitted[1]
+        selected_cdl = splitted[1]
         query = update.callback_query
         query.answer()
         query.edit_message_text(text=teaching_menu_message(), reply_markup=teaching_menu_keyboard())
@@ -95,21 +123,21 @@ def cdl_menu(update, context):
         text = db.list_teachings(splitted[1])
         query = update.callback_query
         query.answer()
-        query.edit_message_text(text)
+        query.edit_message_text(text, disable_web_page_preview=True)
     elif "cdl_search" in update.callback_query.data:
         db = DataBase.get_instance()
         string = update.callback_query.data
         splitted = string.split("-")
-        text = db.search_by_keyword(inserted_keyword,splitted[1])
+        text = db.search_by_keyword(inserted_keyword, splitted[1])
         if not text:
-            text = "Nessun insgamento"
+            text = "Non è stato trovato nessun insegnamento corrispondente al parametro inserito"
         query = update.callback_query
         query.answer()
-        query.edit_message_text(text)
+        query.edit_message_text(text, disable_web_page_preview=True)
     elif "cdl_lesson" in update.callback_query.data:
         string = update.callback_query.data
         splitted = string.split("-")
-        selected_teaching = splitted[1]
+        selected_cdl = splitted[1]
         query = update.callback_query
         query.answer()
         query.edit_message_text(text=teaching_menu_message(), reply_markup=teaching_lesson_menu_keyboard())
@@ -117,12 +145,12 @@ def cdl_menu(update, context):
         db = DataBase.get_instance()
         string = update.callback_query.data
         splitted = string.split("-")
-        text = db.search_by_name(professor_name,splitted[1])
+        text = db.search_by_name(professor_name, splitted[1])
         if not text:
-            text = "Nessun insgamento"
+            text = "Non è stato trovato nessun insegnamento corrispondente al parametro inserito"
         query = update.callback_query
         query.answer()
-        query.edit_message_text(text)
+        query.edit_message_text(text, disable_web_page_preview=True)
 
 
 
@@ -140,27 +168,25 @@ def cdl_menu_message():
 
 
 def teaching_menu(update, context):
-    print(update.callback_query.data)
     if "teaching_info" in update.callback_query.data:
         db = DataBase.get_instance()
         splitted = update.callback_query.data.split("-")
         text = db.show_teaching_info(splitted[1])
         query = update.callback_query
         query.answer()
-        query.edit_message_text(text)
+        query.edit_message_text(text, disable_web_page_preview=True)
     elif "teaching_lessons" in update.callback_query.data:
         db = DataBase.get_instance()
         splitted = update.callback_query.data.split("-")
         text = db.get_lessons(splitted[1])
-        print(text)
         query = update.callback_query
         query.answer()
-        query.edit_message_text(text)
+        query.edit_message_text(text, disable_web_page_preview=True)
 
 
 def teaching_menu_keyboard():
     db = DataBase.get_instance()
-    teachings_names, teachings_ids = db.get_cdl_teachings(selected_teaching)
+    teachings_names, teachings_ids = db.get_cdl_teachings(selected_cdl)
     keyboard = []
     for idx in range(len(teachings_names)):
         keyboard.append([InlineKeyboardButton(teachings_names[idx], callback_data='teaching_info-'+str(teachings_ids[idx]))])
@@ -169,7 +195,7 @@ def teaching_menu_keyboard():
 
 def teaching_lesson_menu_keyboard():
     db = DataBase.get_instance()
-    teachings_names, teachings_ids = db.get_cdl_teachings(selected_teaching)
+    teachings_names, teachings_ids = db.get_cdl_teachings(selected_cdl)
     keyboard = []
     for idx in range(len(teachings_names)):
         keyboard.append([InlineKeyboardButton(teachings_names[idx], callback_data='teaching_lessons-'+str(teachings_ids[idx]))])
@@ -216,22 +242,22 @@ def cdl_search_professor_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 
-#############################GUI_STUFF#############################
-
-
 def main():
 
 
-    updater = Updater("token", use_context=True)
+    updater = Updater(open('token').read(), use_context=True)
 
     dp = updater.dispatcher
 
-    dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("list", show_teachings_list))
-    dp.add_handler(CommandHandler("info", show_teaching_info, pass_args=True))
-    dp.add_handler(CommandHandler("lesson", show_lessons, pass_args=True))
-    dp.add_handler(CommandHandler("search", search_teaching, pass_args=True))
-    dp.add_handler(CommandHandler("prof", search_professor, pass_args=True))
+    dp.add_handler(CommandHandler("start", start_command))
+    dp.add_handler(CommandHandler("help", help_command))
+    dp.add_handler(CommandHandler("list", list_command))
+    dp.add_handler(CommandHandler("info", info_command, pass_args=True))
+    dp.add_handler(CommandHandler("lesson", lesson_command, pass_args=True))
+    dp.add_handler(CommandHandler("search", search_command, pass_args=True))
+    dp.add_handler(CommandHandler("prof", prof_command, pass_args=True))
+    dp.add_handler(MessageHandler(Filters.text, unknow_command))
+    dp.add_handler(MessageHandler(Filters.command, unknow_command))
 
     updater.dispatcher.add_handler(CallbackQueryHandler(cdl_menu, pattern='cdl'))
     updater.dispatcher.add_handler(CallbackQueryHandler(teaching_menu, pattern='teaching'))

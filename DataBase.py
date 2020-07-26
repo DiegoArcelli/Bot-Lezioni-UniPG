@@ -12,10 +12,10 @@ class DataBase:
 
     @staticmethod
     def get_instance():
-        global instance
-        if not 'instance' in globals():
-            instance = DataBase('root','localhost','lezioni_db','')
-        return instance
+        global __instance
+        if not '_DataBase__instance' in globals():
+            __instance = DataBase('root','localhost','lezioni_db','')
+        return __instance
 
 
     def db_connect(self, user, host, db, password):
@@ -43,8 +43,8 @@ class DataBase:
             cursor.execute(query)
             records = cursor.fetchall()
             full_string = ""
-            for row in records:       
-                temp = "Insegnamento: " + str(row[0], 'utf-8') + "\nDocente: " + str(row[5], 'utf-8') + " " + str(row[6], 'utf-8') + "\nId insegnamento: " + str(row[1]) + "\nAula virtuale: " + str(row[4], 'utf-8') +  "\n\n"
+            for row in records:
+                temp = "Insegnamento: " + str(row[0], 'utf-8') + "\nCorso di laurea: " + str(row[3], 'utf-8') + "\nDocente: " + str(row[5], 'utf-8') + " " + str(row[6], 'utf-8') + "\nId insegnamento: " + str(row[1]) + "\nAula virtuale: " + str(row[4], 'utf-8') +  "\n\n"
                 full_string += temp
         except Error as e:
             print("Error reading data from MySQL table", e)
@@ -60,7 +60,10 @@ class DataBase:
             cursor = self.connection.cursor()
             cursor.execute(query)
             records = cursor.fetchall()
-            str_info = "Insegnamento: " + str(records[0][0], 'utf-8') + "\nDocente: " + str(records[0][5], 'utf-8') + " " + str(records[0][6], 'utf-8')  + "\nId insegnamento: " + str(records[0][1]) + "\nAula virtuale: " + str(records[0][4], 'utf-8')
+            if not records:
+                str_info = "Non è stato trovato nessun insegnamento corrispondente all'id inserito"
+            else:
+                str_info = "Insegnamento: " + str(records[0][0], 'utf-8') + "\nCorso di laurea: " + str(records[0][3], 'utf-8') +  "\nDocente: " + str(records[0][5], 'utf-8') + " " + str(records[0][6], 'utf-8')  + "\nId insegnamento: " + str(records[0][1]) + "\nAula virtuale: " + str(records[0][4], 'utf-8')
         except Error as e:
             print("Error reading data from MySQL table", e)
         finally:
@@ -86,9 +89,9 @@ class DataBase:
         return cdl_names
 
 
-    def get_cdl_teachings(self, teaching):
+    def get_cdl_teachings(self, cdl):
         try:
-            query = "SELECT nome_insegnamento, id_insegnamento FROM Insegnamento WHERE corso_di_laurea = '" + teaching + "'"
+            query = "SELECT nome_insegnamento, id_insegnamento FROM Insegnamento WHERE corso_di_laurea = '" + cdl + "'"
             cursor = self.connection.cursor()
             cursor.execute(query)
             records = cursor.fetchall()
@@ -107,21 +110,20 @@ class DataBase:
 
     def get_lessons(self, id):
         try:
-            query = "SELECT * FROM Lezione INNER JOIN Insegnamento ON Insegnamento.id_insegnamento = Lezione.id_insegnamento INNER JOIN Docente ON Docente.id_docente = Lezione.id_docente WHERE Lezione.id_insegnamento =" + str(id)
+            query = "SELECT * FROM Lezione INNER JOIN Insegnamento ON Insegnamento.id_insegnamento = Lezione.id_insegnamento INNER JOIN Docente ON Docente.id_docente = Lezione.id_docente WHERE Lezione.id_insegnamento = " + str(id)
             cursor = self.connection.cursor()
             cursor.execute(query)
             records = cursor.fetchall()
-            full_string = "Insegnamento " + str(records[0][7], 'utf-8') + "\n\n"
-            for itm in records:
-                for i in itm:
-                    pass
-                    print(i)
-                str_data = itm[3].strftime('%m/%d/%Y')
-                str_inizio = str(itm[4])
-                str_fine = str(itm[5])
-                temp = "Data: " + str_data + "\nOra inizio: " + str_inizio + "\nOra fine: " + str_fine + "\nAula: " + str(itm[6], 'utf-8') + "\nDocente: " + str(itm[12], 'utf-8') + " " + str(itm[13], 'utf-8') + "\n\n"
-                full_string += temp
-                print(" ")
+            if not records:
+                full_string = "Non è stato trovato nessun insegnamento corrispondente all'id inserito"
+            else:
+                full_string = "Insegnamento " + str(records[0][7], 'utf-8') + "\n\n"
+                for itm in records:
+                    str_data = itm[3].strftime('%m/%d/%Y')
+                    str_inizio = str(itm[4])
+                    str_fine = str(itm[5])
+                    temp = "Data: " + str_data + "\nOra inizio: " + str_inizio + "\nOra fine: " + str_fine + "\nAula: " + str(itm[6], 'utf-8') + "\nDocente: " + str(itm[12], 'utf-8') + " " + str(itm[13], 'utf-8') + "\n\n"
+                    full_string += temp
         except Error as e:
             print("Error reading data from MySQL table", e)
         finally:
@@ -162,8 +164,6 @@ class DataBase:
             full_string = ""
             for itm in records:
                 full_string += self.show_teaching_info(itm[0]) + "\n\n"
-            print(query)
-            print(full_string)
         except Error as e:
             print("Error reading data from MySQL table", e)
         finally:
